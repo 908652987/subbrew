@@ -1,6 +1,6 @@
-# Repository Guidelines
+# subbrew — Repository Guidelines
 
-mihomo（Clash.Meta）多订阅聚合配置的**生成器**，不是应用工程：根目录扁平布局、无子目录、无 CI、无测试、无依赖清单；已初始化 Git 仓库，入库的只有生成器、模板与示例订阅（`subs.example.yaml`），真实订阅 `subs.yaml` 与产物 `config.yaml` 均被 `.gitignore` 排除。产物 `config.yaml` 作为本地文件导入 FlClash / Clash Verge Rev / Clash Party 使用。
+subbrew 是 mihomo（Clash.Meta）多订阅聚合配置的**生成器**，不是应用工程：根目录扁平布局、无子目录、无 CI、无测试、无依赖清单；已初始化 Git 仓库，入库的只有生成器、模板与示例订阅（`subs.example.yaml`），真实订阅 `subs.yaml` 与产物 `config.yaml` 均被 `.gitignore` 排除。产物 `config.yaml` 作为本地文件导入 FlClash / Clash Verge Rev / Clash Party 使用。
 
 内核行为已用官方 `mihomo v1.19.33 darwin arm64` 实测验证（2026-11-04）；三个客户端自带内核分别为 Clash Verge Rev 2.5.8 → `v1.19.32`、Clash Party 2.0.4 → `v1.19.33`、FlClash 0.9.2 → `v1.19.33`（FlClash 依据其 CHANGELOG，其余为二进制 `-v` 实测）。
 

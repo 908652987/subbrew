@@ -1,0 +1,43 @@
+# =====================================================================
+# 示例模板 —— 复制为 subs.yaml 再填真实 token（subs.yaml 已被 .gitignore 排除）
+# 每条订阅会自动展开为：
+#   proxy-providers.<id>    -> 一个独立代理集合（独立刷新、独立测延迟）
+#   <name> · 自动           -> url-test，自动选这条订阅里最快的节点
+#   <name> · 手动           -> select，固定挑这条订阅里的某个节点
+# 三个客户端共用同一份产物，不需要在软件里来回切换订阅
+# =====================================================================
+
+# 节点名过滤：剔除订阅里夹带的"剩余流量/到期时间/官网"等假节点
+exclude-filter: "(?i)剩余|到期|过期|官网|重置|流量|套餐|折扣|客服|公告|订阅|expire|traffic"
+
+subs:
+  - name: 机场A
+    id: a                       # provider 键名：字母数字-_，必须唯一
+    url: "https://example.com/api/v1/client/subscribe?token=REPLACE_A"
+    prefix: "[A] "              # 节点名前缀，多订阅重名时不会互相覆盖（"" 可关闭前缀）
+    # additional-suffix: " |A"  # 需要的话也可加后缀
+    # proxy-name:               # 正则改名（在加前后缀之前执行）
+    #   - pattern: "IPLC-(.*?)倍"
+    #     target: "iplc x $1"
+    interval: 3600              # 订阅刷新间隔（秒）
+    udp: true                   # 强制所有节点开 UDP（多数机场适用）
+    # header:                   # 部分机场按 UA 区分客户端，需要时打开
+    #   User-Agent:
+    #     - "clash-verge/v2.5.8"
+
+  - name: 机场B
+    id: b
+    url: "https://example.net/sub?token=REPLACE_B"
+    prefix: "[B] "
+    interval: 3600
+    udp: true
+
+  - name: 机场C
+    id: c
+    url: "https://example.org/api/v1/subscribe?token=REPLACE_C"
+    prefix: "[C] "
+    interval: 7200
+    udp: true
+
+# 延迟测试地址（三条订阅共用）
+test-url: "https://www.gstatic.com/generate_204"

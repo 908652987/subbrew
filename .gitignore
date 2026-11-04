@@ -1,0 +1,16 @@
+# 运行期目录：内核按 interval 自行拉取，不入库
+providers/
+ruleset/
+
+# 本机真实订阅清单（含 token）：由 subs.example.yaml 复制而来，永不提交
+subs.yaml
+
+# 生成产物：内含真实订阅 URL，不入库（客户端直接导入本地文件）
+config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+
+# macOS
+.DS_Store

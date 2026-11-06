@@ -62,43 +62,51 @@ function main(config, profileName) {
   const ids = Object.keys(providers);
   if (ids.length === 0) return config; // 没有多订阅就不动配置
 
+  // ---------- 每订阅独立分组（核心：自动跟随 providers） ----------
+  const subGroups = [];
+  const subGroupNames = [];
+  for (const id of ids) {
+    const label = LABELS[id] || id;
+    const auto = label + " · 自动";
+    const manual = label + " · 手动";
+    subGroups.push(Object.assign({}, URL_TEST, {
+      name: auto,
+      use: [id],
+      hidden: false,
+    }));
+    subGroups.push({ name: manual, type: "select", use: [id] });
+    subGroupNames.push(auto, manual);
+  }
+
   const groups = [];
 
-  // ---------- 总聚合：所有订阅的全部节点 ----------
+  // ---------- 节点选择（总入口） ----------
+  groups.push({
+    name: "🚀 节点选择",
+    type: "select",
+    proxies: ["♻️ 自动选择", "🖱️ 手动选择"]
+      .concat(REGIONS.map((r) => r.name), ["🌍 其他地区", "🎯 全局直连"])
+      .concat(subGroupNames, ["DIRECT"]),
+  });
+
+  // ---------- 自动选择：所有订阅的全部节点 ----------
   groups.push(Object.assign({}, URL_TEST, {
     name: "♻️ 自动选择",
     "include-all-providers": true,
   }));
 
-  // ---------- 每订阅独立分组（核心：自动跟随 providers） ----------
-  const subGroups = [];
-  for (const id of ids) {
-    const label = LABELS[id] || id;
-    const auto = label + " · 自动";
-    const manual = label + " · 手动";
-    groups.push(Object.assign({}, URL_TEST, {
-      name: auto,
-      use: [id],
-      hidden: false,
-    }));
-    groups.push({ name: manual, type: "select", use: [id] });
-    subGroups.push(auto, manual);
-  }
-
-  // ---------- 总出口 ----------
+  // ---------- 手动选择：所有订阅的全部节点，手动挑一个 ----------
   groups.push({
-    name: "🚀 节点选择",
+    name: "🖱️ 手动选择",
     type: "select",
-    proxies: ["♻️ 自动选择", "🎯 全局直连"].concat(subGroups, ["DIRECT"]),
-  });
-  groups.push({ name: "🎯 全局直连", type: "select", proxies: ["DIRECT"] });
-  groups.push({
-    name: "🐟 漏网之鱼",
-    type: "select",
-    proxies: ["🚀 节点选择", "♻️ 自动选择", "DIRECT"],
+    "include-all-providers": true,
+    hidden: false,
   });
 
-  // ---------- 地区（跨订阅自动汇总） ----------
+  // ---------- 订阅选择：每订阅一组（自动 / 手动） ----------
+  for (const group of subGroups) groups.push(group);
+
+  // ---------- 地址选择：跨订阅自动汇总 ----------
   for (const region of REGIONS) {
     groups.push(Object.assign({}, URL_TEST, {
       name: region.name,
@@ -113,7 +121,7 @@ function main(config, profileName) {
     "exclude-filter": REGIONS.map((r) => r.re).join("|"),
   });
 
-  // ---------- 服务分流 ----------
+  // ---------- 其他选择：服务分流 ----------
   const services = [
     "🤖 AI服务",
     "✈️ 电报消息",
@@ -121,8 +129,6 @@ function main(config, profileName) {
     "🎬 奈飞视频",
     "🎵 Spotify",
     "📢 谷歌服务",
-    "🐙 Github",
-    "🎮 游戏平台",
   ];
   for (const name of services) {
     groups.push({ name: name, type: "select", proxies: SERVICE_CHOICES.slice() });
@@ -130,7 +136,18 @@ function main(config, profileName) {
   for (const name of ["🍎 苹果服务", "🪟 微软服务"]) {
     groups.push({ name: name, type: "select", proxies: ["🎯 全局直连", "🚀 节点选择"] });
   }
+  for (const name of ["🐙 Github", "🎮 游戏平台"]) {
+    groups.push({ name: name, type: "select", proxies: SERVICE_CHOICES.slice() });
+  }
   groups.push({ name: "🛑 广告拦截", type: "select", proxies: ["REJECT", "DIRECT"] });
+
+  // ---------- 兜底 ----------
+  groups.push({
+    name: "🐟 漏网之鱼",
+    type: "select",
+    proxies: ["🚀 节点选择", "♻️ 自动选择", "🖱️ 手动选择", "DIRECT"],
+  });
+  groups.push({ name: "🎯 全局直连", type: "select", proxies: ["DIRECT"] });
 
   config["proxy-groups"] = groups;
   return config;

@@ -27,7 +27,7 @@ auto-groups.js ── 客户端加载时执行 main(config, profileName)，重�
 关键契约：
 
 - `gen.py:173-206` `main()`：检查 `subs.yaml` 存在 → `build()`（`gen.py:52-133`）→ 替换占位符（缩进 2/2/6）→ 残留 `{{` 即失败 → `check()`（`gen.py:136-171`）→ 校验通过才写文件（`--check` 时只校验）
-- 占位符是**列 0 的精确注释串**，改动缩进或文字会让替换失效：`# {{PROVIDERS}}`（`template.yaml:136`）、`# {{SUB_GROUP_REFS}}`（`:159`）、`# {{SUB_GROUPS}}`（`:294`）
+- 占位符是**列 0 的精确注释串**，改动缩进或文字会让替换失效：`# {{PROVIDERS}}`（`template.yaml:136`）、`# {{SUB_GROUP_REFS}}`（`:156`）、`# {{SUB_GROUPS}}`（`:178`）
 - 生成的每订阅分组名固定为 `f"{name} · 自动"` / `f"{name} · 手动"`，`check()` 用同一公式反查；分隔符改一处不改另一处会让 `--check` 报“缺少订阅分组”
 - `proxy-groups` 里 `proxies:` / `rules:` 的目标必须存在于分组名或 `SPECIAL_TARGETS`（`gen.py:35`），否则 `--check` 返回 1
 - `gen.py` 只把 `subs.yaml` 的 `test-url` 用于 provider 与每订阅分组，**不会**改写模板里的 `&test_url`
@@ -116,8 +116,8 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 
 改动这些值时必须全量搜索，避免只改一处：
 
-- 测试地址：`subs.example.yaml:43`（`subs.yaml` 结构相同、同位置）、`template.yaml:146`（`&test_url`）、`auto-groups.js:19`、`gen.py` 的 `test_url` 默认值
-- 地区正则：模板（`template.yaml:178-232`）与 `auto-groups.js:30-37` 两套，当前已对齐（含 `川日`、`台北`、`洛杉矶|圣何塞|西雅图`）。模板 `🌍 其他地区` 的 `exclude-filter` 必须包含上述全部关键词，否则同一节点会既进地区组又进“其他地区”；JS 侧由 `REGIONS.map(r => r.re).join("|")` 自动派生，改 `REGIONS` 即可
+- 测试地址：`subs.example.yaml:43`（`subs.yaml` 结构相同、同位置）、`template.yaml:163`（`&test_url`）、`auto-groups.js:19`、`gen.py` 的 `test_url` 默认值
+- 地区正则：模板（`template.yaml:181-237`）与 `auto-groups.js:30-37` 两套，当前已对齐（含 `川日`、`台北`、`洛杉矶|圣何塞|西雅图`）。模板 `🌍 其他地区` 的 `exclude-filter` 必须包含上述全部关键词，否则同一节点会既进地区组又进“其他地区”；JS 侧由 `REGIONS.map(r => r.re).join("|")` 自动派生，改 `REGIONS` 即可
 - `exclude-filter`：`subs.example.yaml:11`（`subs.yaml` 同位置）与 `gen.py:34` 兜底值
 - rule-provider 名与 `nameserver-policy` 的 `rule-set:<name>` 键（`template.yaml:99-112`）一一对应
 - `auto-groups.js:23-26` 的 `LABELS` 以 provider id 为键；改 id 会退回显示裸 id
@@ -128,9 +128,9 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 - `gen.py:29-35`：路径与常量（`ROOT`、`TEMPLATE`、`SUBS`、`OUT`、`DEFAULT_EXCLUDE`、`SPECIAL_TARGETS`）
 - `gen.py:52-133`：`build()`；`gen.py:136-171`：`check()`；`gen.py:173-206`：`main()`（开头检查 `subs.yaml` 是否存在）
 - `template.yaml:7-25`：端口/模式/profile/geo；`:30-39` TUN；`:42-112` DNS（fake-ip、`respect-rules`、分流 DNS）；`:115-133` sniffer
-- `template.yaml:141-294`：静态分组；`:299-475` 19 个 rule-providers；`:477-516` 28 条规则
-- `config.yaml:135-186` provider 段、`:191-392` 分组、`:395-571` rule-providers、`:573-612` 规则；文件头仍写着“本文件是模板”，属生成时原样复制的注释，不要据此手改
-- `auto-groups.js:50-58` `URL_TEST`；`:60-137` `main()`；`:135` 整体替换 `proxy-groups`
+- `template.yaml:141-311`：静态分组；`:316-492` 19 个 rule-providers；`:494-533` 28 条规则
+- `config.yaml:135-193` provider 段、`:194-414` 分组、`:415-592` rule-providers、`:593-632` 规则；文件头仍写着“本文件是模板”，属生成时原样复制的注释，不要据此手改
+- `auto-groups.js:50-58` `URL_TEST`；`:60-154` `main()`；`:152` 整体替换 `proxy-groups`
 
 不要随意改的值：`mixed-port: 7890`、`allow-lan: false`、`dns.listen 0.0.0.0:1053`、`fake-ip-range 198.18.0.1/16`、`tun.enable: false`（由客户端 GUI 开关接管）、`proxy-server-nameserver` 必须使用 IP 直连的 DoH 以防解析循环、`sniffer.skip-domain`（苹果推送 / 米家发现）、每个 rule-provider 的 `proxy: DIRECT`。
 
@@ -186,6 +186,6 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 | 增删订阅 | 改 `subs.yaml`（本机真实 token）；结构变更同步回 `subs.example.yaml` → `gen.py`；`auto-groups.js` 的 `LABELS` 可选 |
 | 改分组名 / 新增分组 | `template.yaml` + `rules` 目标 + `auto-groups.js` 组名 + `gen.py` 校验公式 |
 | 改地区正则 | 模板 `filter`、模板 `🌍 其他地区` 的 `exclude-filter`、`auto-groups.js` 的 `REGIONS` |
-| 改测试地址 | `subs.yaml:43` + `subs.example.yaml:43` + `template.yaml:146` + `auto-groups.js:19` |
+| 改测试地址 | `subs.yaml:43` + `subs.example.yaml:43` + `template.yaml:163` + `auto-groups.js:19` |
 | 改端口 / DNS / TUN | 同时确认三个客户端的 GUI 覆盖行为，必要时更新本文件“客户端导入与覆盖关系” |
 | 内核版本升级 | 重跑 `-t` 与真实内核验证，更新本文件顶部的版本记录 |

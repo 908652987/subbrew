@@ -26,7 +26,7 @@ auto-groups.js ── 客户端加载时执行 main(config, profileName)，重�
 
 关键契约：
 
-- `gen.py:173-206` `main()`：检查 `subs.yaml` 存在 → `build()`（`gen.py:52-133`）→ 替换占位符（缩进 2/2/6）→ 残留 `{{` 即失败 → `check()`（`gen.py:136-171`）→ 校验通过才写文件（`--check` 时只校验）
+- `gen.py:197-230` `main()`：检查 `subs.yaml` 存在 → `build()`（`gen.py:76-157`）→ 替换占位符（缩进 2/2/6）→ 残留 `{{` 即失败 → `check()`（`gen.py:160-194`）→ 校验通过才写文件（`--check` 时只校验）
 - 占位符是**列 0 的精确注释串**，改动缩进或文字会让替换失效：`# {{PROVIDERS}}`（`template.yaml:136`）、`# {{SUB_GROUP_REFS}}`（`:156`）、`# {{SUB_GROUPS}}`（`:178`）
 - 生成的每订阅分组名固定为 `f"{name} · 自动"` / `f"{name} · 手动"`，`check()` 用同一公式反查；分隔符改一处不改另一处会让 `--check` 报“缺少订阅分组”
 - `proxy-groups` 里 `proxies:` / `rules:` 的目标必须存在于分组名或 `SPECIAL_TARGETS`（`gen.py:35`），否则 `--check` 返回 1
@@ -85,8 +85,9 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 ## Code Conventions & Common Patterns
 
 - 注释、docstring、CLI 提示均为中文；成功 `✓`（stdout），校验错误 `✗`（stderr），警告 `!`（stderr）
+- `✓`/`✗` 由 `gen.py:38-59` 的 `_marker()` 按**输出流编码**挑选：UTF-8 用 `✓/✗`，非 UTF-8（Windows GBK / cp936）回退 `√/×`，仍不可编码则用 `OK/ERR`；同一处理会把非 UTF-8 流的 `errors` 放宽为 `replace`，避免报错信息里的 emoji 分组名抛 `UnicodeEncodeError` 掩盖真实退出码（cp936 实测：修前校验通过却以 1 退出）
 - 单次同步变换，无 async / 线程 / 网络 / 子进程
-- **占位符即注释**：`gen.py` 用 `str.replace` 注入 YAML 块，再由 `dump_block()`（`gen.py:43-49`）整体缩进；`yaml.safe_dump(..., sort_keys=False, allow_unicode=True, width=1000)` 保持顺序、中文与长 URL 单行
+- **占位符即注释**：`gen.py` 用 `str.replace` 注入 YAML 块，再由 `dump_block()`（`gen.py:67-73`）整体缩进；`yaml.safe_dump(..., sort_keys=False, allow_unicode=True, width=1000)` 保持顺序、中文与长 URL 单行
 - 顺序即语义：provider / group / rule 均按书写顺序输出，不要排序
 - 命名以中文 + emoji 作为**跨文件主键**（`🎯 全局直连`、`🚀 节点选择`、`🐟 漏网之鱼`）；改名必须同步模板、规则、`gen.py` 校验、`auto-groups.js`
 - 分组绑定订阅用 `use: [providerId]`；跨订阅聚合用 `include-all-providers: true` + `filter` / `exclude-filter`。这些正则是 Go RE2 方言（`(?i)`、`hong ?kong`），Python/JS 只透传不编译
@@ -96,7 +97,7 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 - 规则顺序固定：内网直连 → 广告 REJECT → 服务分流（专用先于通用）→ 国内直连 → gfw → `MATCH`；IP 类规则带 `no-resolve`
 - 错误处理：输入错误用 `sys.exit("消息")`；校验错误汇总后返回 1；不要吞掉异常
 
-### `subs.example.yaml` / `subs.yaml` 字段契约（`gen.py:52-133`，两份结构相同）
+### `subs.example.yaml` / `subs.yaml` 字段契约（`gen.py:76-157`，两份结构相同）
 
 | 键 | 默认 | 产物 |
 |---|---|---|
@@ -106,9 +107,9 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 | `prefix` | `"[{name}] "` | `override.additional-prefix`；`""` 关闭 |
 | `udp` | **true** | 未写即强制开 UDP；关闭需显式 `udp: false` |
 | `interval` | `3600` | provider 刷新秒数，`int()` 直转 |
-| `tfo` / `additional-suffix` / `proxy-name` / `header` / `proxy` / `exclude-filter` / `health-check-url` | 见 `gen.py:67-133` | 原样透传或映射到 provider 字段 |
+| `tfo` / `additional-suffix` / `proxy-name` / `header` / `proxy` / `exclude-filter` / `health-check-url` | 见 `gen.py:91-157` | 原样透传或映射到 provider 字段 |
 
-`slug()`（`gen.py:38-40`）会把纯中文 id 归并成 `sub`，导致“provider id 重复”；给每条订阅显式 ASCII `id`。
+`slug()`（`gen.py:62-64`）会把纯中文 id 归并成 `sub`，导致“provider id 重复”；给每条订阅显式 ASCII `id`。
 
 `additional-prefix` / `additional-suffix` / `proxy-name` 已实测生效：`香港01` → `[A] 香港01`、加后缀 → `[A] 香港01 |A`；`proxy-name` 的正则替换先于前后缀执行。
 
@@ -126,7 +127,7 @@ gunzip -f /tmp/mihomo.gz && mv /tmp/mihomo /tmp/mihomo-bin/ && chmod +x /tmp/mih
 ## Important Files
 
 - `gen.py:29-35`：路径与常量（`ROOT`、`TEMPLATE`、`SUBS`、`OUT`、`DEFAULT_EXCLUDE`、`SPECIAL_TARGETS`）
-- `gen.py:52-133`：`build()`；`gen.py:136-171`：`check()`；`gen.py:173-206`：`main()`（开头检查 `subs.yaml` 是否存在）
+- `gen.py:76-157`：`build()`；`gen.py:160-194`：`check()`；`gen.py:197-230`：`main()`（开头检查 `subs.yaml` 是否存在）
 - `template.yaml:7-25`：端口/模式/profile/geo；`:30-39` TUN；`:42-112` DNS（fake-ip、`respect-rules`、分流 DNS）；`:115-133` sniffer
 - `template.yaml:141-311`：静态分组；`:316-492` 19 个 rule-providers；`:494-533` 28 条规则
 - `config.yaml:135-193` provider 段、`:194-414` 分组、`:415-592` rule-providers、`:593-632` 规则；文件头仍写着“本文件是模板”，属生成时原样复制的注释，不要据此手改

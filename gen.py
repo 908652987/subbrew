@@ -35,6 +35,30 @@ DEFAULT_EXCLUDE = "(?i)剩余|到期|过期|官网|重置|流量|套餐|折扣|�
 SPECIAL_TARGETS = {"DIRECT", "REJECT", "REJECT-DROP", "PASS", "COMPATIBLE", "GLOBAL"}
 
 
+def _marker(stream, *cands: str) -> str:
+    """挑一个该流能显示的标记：UTF-8 用 ✓/✗，非 UTF-8（如 Windows GBK）退回 √/× 或单词。
+
+    同时把非 UTF-8 流的错误策略放宽为 replace，避免分组名里的 emoji 让报错信息变成 traceback。
+    """
+    enc = (getattr(stream, "encoding", None) or "utf-8").lower()
+    if not enc.startswith("utf"):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+    for cand in cands[:-1]:
+        try:
+            cand.encode(enc)
+            return cand
+        except (UnicodeEncodeError, LookupError):
+            pass
+    return cands[-1]
+
+
+OK = _marker(sys.stdout, "✓", "√", "OK")      # 成功标记
+FAIL = _marker(sys.stderr, "✗", "×", "ERR")    # 失败标记
+
+
 def slug(text: str) -> str:
     out = re.sub(r"[^0-9A-Za-z_-]+", "-", text).strip("-").lower()
     return out or "sub"
@@ -191,14 +215,14 @@ def main() -> int:
 
     errors = check(text, [str(s.get("name")) for s in cfg["subs"]])
     if errors:
-        print("\n".join(f"✗ {e}" for e in errors), file=sys.stderr)
+        print("\n".join(f"{FAIL} {e}" for e in errors), file=sys.stderr)
         return 1
     if args.check:
-        print(f"✓ 校验通过：{len(providers)} 个订阅，{len(groups)} 个订阅分组")
+        print(f"{OK} 校验通过：{len(providers)} 个订阅，{len(groups)} 个订阅分组")
         return 0
 
     OUT.write_text(text, encoding="utf-8")
-    print(f"✓ 已生成 {OUT.name}：{len(providers)} 个订阅，{len(groups)} 个订阅分组")
+    print(f"{OK} 已生成 {OUT.name}：{len(providers)} 个订阅，{len(groups)} 个订阅分组")
     print("  导入后如客户端提示 'providers' 目录不存在，首次刷新会自动创建")
     return 0
 
